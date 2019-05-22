@@ -7,6 +7,7 @@ output: html_document
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_chunk$set(echo = TRUE, warning = FALSE)
 library(tidyverse)
 library(lubridate)
 ```
@@ -17,7 +18,7 @@ library(lubridate)
 
 Are different types of coral reefs home to more species of fish than other types of coral reefs? How does water temperature impact the coral reef and the ecosystem that thrives off this living structure? Using two different data sets, Coral Reef Water Temperature Monitoring Protocol Data and National Coral Reef Monitoring Program: Assessment of coral reef fish communities in the U.S. Virgin Islands data, we can answer these questions and discover more findings. This tutorial will walk you through the entire data science pipeline. The first step is to identify the problem or question you want to explore, which we have described above for our tutorial. Next you want to find resources that have data tables with enough entities and key attributes to create informative findings on the subject, which we have also listed above. Then we will show you how to collect and clean the data to make it readable for the machine and user with data curation, parsing, and management tools. Once that data is manageable we will show you how to complete an exploratory data analysis by creating new data tables and graphs to create hypothesis about the data. Then we will show you how to test the hypothesis and use machine learning to provide an analysis for your findings. Finally, we will show you how to curate a message or messages covering insights learned during the tutorial.
 
-###Required Set-up
+##Required Set-up
 
 You will need [R](https://cran.r-project.org/index.html) and the following packages to follow along with the tutorial:
     1. tidyverse
@@ -38,7 +39,31 @@ There are multiple methods of retrieving data from a website based on how the da
 
 The first data set we will be downloading into RStudio is a CSV (comma-separated values) file, which makes the process a bit quicker and simpler. First download the zip file from [Coral Reef Water Temperature Monitoring Protocol Data](https://irma.nps.gov/DataStore/Reference/Profile/2257123). Once this file has downloaded, unzip the file. There should be a folder with 78 CSV Documents. We only want the data sets relating to the U.S. Virgin Islands, so we will highlight only the CSV Documents starting with "VIIS", there should be 12. Open a File Explorer/Finder window and search for the project folder containing the RMarkdown file, Tutorial. Then drag the selected files into the folder, which should add the data sets into the RStudio project. This can be accessed in code by:
 ```{r example}
-data_temp1 <- read_csv("VIIS_HA_1_20181025.csv")
+VIIS_HA_1_20181025 <- read_csv("VIIS_HA_1_20181025.csv")
+VIIS_HA_2_20181025 <- read_csv("VIIS_HA_2_20181025.csv")
+VIIS_MB_1_20181025 <- read_csv("VIIS_MB_1_20181025.csv")
+VIIS_MB_2_20181025 <- read_csv("VIIS_MB_2_20181025.csv")
+VIIS_NF_1_20181025 <- read_csv("VIIS_NF_1_20181025.csv")
+VIIS_NF_2_20181025 <- read_csv("VIIS_NF_2_20181025.csv")
+VIIS_TK_1_20181025 <- read_csv("VIIS_TK_1_20181025.csv")
+VIIS_TK_2_20181025 <- read_csv("VIIS_TK_2_20181025.csv")
+VIIS_WS_1_20181025 <- read_csv("VIIS_WS_1_20181025.csv")
+VIIS_WS_2_20181025 <- read_csv("VIIS_WS_2_20181025.csv")
+VIIS_YZ_1_20181025 <- read_csv("VIIS_YZ_1_20181025.csv")
+VIIS_YZ_2_20181025 <- read_csv("VIIS_YZ_2_20181025.csv")
+
+head(VIIS_HA_1_20181025)
+head(VIIS_HA_2_20181025)
+head(VIIS_MB_1_20181025)
+head(VIIS_MB_2_20181025)
+head(VIIS_NF_1_20181025)
+head(VIIS_NF_2_20181025)
+head(VIIS_TK_1_20181025)
+head(VIIS_TK_2_20181025)
+head(VIIS_WS_1_20181025)
+head(VIIS_WS_2_20181025)
+head(VIIS_YZ_1_20181025)
+head(VIIS_YZ_2_20181025)
 ```
 
 The second data set we will be downloading into Rstudio we will scrape from HTML. [National Coral Reef Monitoring Program: Assessment of coral reef fish communities in the U.S. Virgin Islands data](https://ecowatch.ncddc.noaa.gov/erddap/tabledap/CRCP_Reef_Fish_Surveys_USVI.htmlTable?time%2Clatitude%2Clongitude%2Cprimary_sample_unit%2Cstation_nr%2Csample_depth%2Cunderwater_visibility%2Cgrid_id%2Chabitat_cd%2Chabitat_type%2Cdepth_strat%2Cdepth_strat_description%2Csub_region%2Csub_region_name_description%2Cadmin%2Cadministration_description%2Cspecies_nr%2Cspecies_cd%2Cscientific_name%2Ccommon_name%2Clen%2Cnum%2Ctime_seen%2Cprot%2Cstrat%2Cstrat_description%2Cregion%2Cregion_description%2Caccession_url&time%3C=2019-05-20T18%3A20%3A56Z) will bring you to the HTML data set. To scrape this data we will use a CSS selector to get the table. In the inspect element on the website we were able to see that we can select by class to get the data set. Below is the code to scrape the data (I will also include the libraries that are needed to complete the code, including the libraries only needs to be coded once in a document before it is used):
@@ -53,6 +78,8 @@ html_data <- url %>%
   read_html() %>%
   html_nodes("table.erd.commonBGColor")%>%
   html_table()
+
+html_data <- html_data[[1]]
 
 head(html_data)
 ```
@@ -71,13 +98,12 @@ CRCP_Reef_Fish_Surveys <- read_csv(csv_url)
 head(CRCP_Reef_Fish_Surveys)
 ```
 
+##Clean the Data
 
-#Clean the Data
+Once we have gotten the data from our two sources, we will clean the data so that we do not have empty entries for any attributes. We also filtered out the data with zero entries, so we could just focus on the fish that were spotted at the coral reef. This will allow a more digestible version of the data frames so there are fewer missing cells.
 
-Once we have gotten the data from our two sources, we need to make sure that its in proper shape for us to use it. 
+As you know from above, the source of our temperature data has many csv files all in the same format, so we will perform the same operations on all of them. While the temperature data has many data tables, instead of being contained in one table, we need to clean each of them so that none of the entities have blank attributes or "NA". This can be accomplished with dplyr's filter() function, this puts a constraint on the entities we want to consider, in this case it only includes entities where none of the fields are NA or blank. More information on dyplr functions and cleaning data can be found on this [cheat sheet](https://www.rstudio.com/wp-content/uploads/2015/02/data-wrangling-cheatsheet.pdf).
 
-
-As you know from above, the source of our temperature data has many csv files all in the same format, so we will perform the same operations on all of them. We wThe temperature data came to us in a more roundabout way, but the only real thing that we need to do is make sure that none of the entities have blank attributes or "NA". This can be accomplished with dplyr's filter() function that puts a constraint on the entities we want to consider, in this case it only includes entities where none of the fields are NA or blank.
 ```{r temp-prep}
   clean_temp_NF_1 <- VIIS_NF_1_20181025 %>%
     filter(Date_Time != "NA", Temp_C != "NA", Quality != "NA", Interpolation!= "NA", Approval != "NA")
@@ -117,8 +143,7 @@ As you know from above, the source of our temperature data has many csv files al
   head(clean_temp_YZ_2)
 ```
 
-
-With our fish data there is a glaring problem almost immediately, there is an entity for non-sightings of fish. The csv has an entity for each time/place-species combination, most of these entities do not consist of fish-sightings. So what we need to do is remove all entities where the num is 0, because in these instances there are no fish to consider. We can accomplish this with a another simple "filter()" statement below, its just that this time we are constraining our set to be   
+With our fish data there is a glaring problem almost immediately, there is an entity for non-sightings of fish. The csv has an entity for each time/place-species combination, most of these entities do not consist of fish-sightings. So what we need to do is remove all entities where the number is 0, because in these instances there are no fish to consider. We can accomplish this with a another simple "filter()" statement below, it is just that this time we are constraining our set to contain entities that have at least one fish sighting.  
 
 ```{r fish-prep}
 clean_fish_data <- CRCP_Reef_Fish_Surveys %>%
@@ -128,20 +153,23 @@ head(clean_fish_data)
 ```
 
 
+##Analysis 
 
-##ANALYSIS
+We've got our data nice and tidy and are finally ready to start performing an analysis. The analysis will allow us to gather more information regarding the trends and patterns in our data, which will help to create testable hypotheses. We've already introduced you to filter() and %>%, but there are a load more dplyr functions that can play a large role in our analysis of the data. When analyzing the data we will look at the fish data first then the temperature data second. 
 
-We've got our data nice and tidy and are finally ready to start fiddling around with it. We've already introduced you to filter() and %>%, but there are a load more dplyr functions that can play a large role in our analysis of the data.
-
-This following block of code will 
+This following block of code will:
   *use group_by to group by the strat_description
   *use mutate to create a new attribute, that measures the species diversity present at each distinct strat
-    *To do this I use n_distinct(), another dplyr function that counts the unique elements
+      -to do this we use n_distinct(), another dplyr function that counts the unique elements
   *use select to cut out the attributes we have no interest in
   *use summarize to change the structure of our table to have each entity be a strat_description
-    *we also use this summarize to construct our new table with all sorts of information about the different strat(i.e. amount of fish if laid front to back, and num_sightings)
-    
+      -we also use this summarize to construct our new table with all sorts of information about the different strat(i.e. length of fish if measured mouth to tail, and num_sightings)
+
+More information on the different functions that can be used is found on the [RDocumentation](https://www.rdocumentation.org/packages/dplyr/versions/0.5.0)
+
 #Fish
+
+In this grouping of our data we will look at the number of fish sightings, fish diversity, and volume of fish at each habitat type. This will show us which habitat type has the largest population of fish as well as the most diverse ecosystem of fish. The volume of fish is the summation of the size of fish that were spotted. 
 
 ```{r fish habitat analysis}
 
@@ -155,8 +183,8 @@ hab_data <- clean_fish_data %>%
 head(hab_data)
 ```
 
+To visualize our data, we will create a plot showing the differences in diversity for each habitat by comparing the number of fish sightings with the diversity of fish species. 
 
-This is how we visualize our data
 ```{r habitat diversity}
 hab_data %>%
   ggplot(aes(x = num_sightings, y = fish_diversity, color = habitat_type)) +
@@ -164,6 +192,12 @@ hab_data %>%
   labs(title = "Differences in Diversity for habitats", x ="number of sightings", y = "fish diversity")
 
 ```
+
+We can see from this plot that the Aggregate reef has the most fish sightings as well as the largest diversity of fish species. Thus, making the Aggregate reef the most compatible and liked habitat by the diverse species of fish. The Patch reef, Pavement, and Hard habitat type have similar averages for number of sightings and fish diversities. While Bedrock and Scattered coral % rock have lower averages. Bedrock has a significantly higher fish diversity compared to the Scattered coral and rock. But they have a similar amount of total fish sightings. 
+
+
+
+In the next data grouping we will look at the average fish length in comparison to how deep the habitat types were in the Atlantic Ocean. We will only compare deep and shallow as defined by the data collection.
 
 ```{r strat analysis}
 strat_data <- clean_fish_data %>%
@@ -173,6 +207,8 @@ strat_data <- clean_fish_data %>%
   
 head(strat_data)
 ```
+
+To visualize our data, we will create a plot showing the average length of fish by comparing deep and shallow habitats. We will also incorporate a line between the points. Deep is colored salmon and shallow is colored aqua. 
 
 ```{r strat graph}
 strat_data %>%
@@ -185,6 +221,12 @@ strat_data %>%
 
 ```
 
+We can gather from the graph that on average there will always tend to be larger fish in deeper waters and shorter fish in more shallow waters The largest difference in fish size based on depth is in the Scattered coral and rock habitat, which houses the tiniest fish. While the smallest difference in fish size based on depth is in the Patch reef habitat. On average, the fish length for all habitats in deep waters were very similar. While the shallow waters had the most varied data for average fish size. 
+
+
+
+The next data grouping will look at the average visibility in comparison to how deep the habitat types were in the Atlantic Ocean. We will only compare deep and shallow as defined by the data collection.
+
 ```{r visibility analysis}
 visibility_data <- clean_fish_data %>%
   group_by(habitat_type, depth_strat) %>%
@@ -195,24 +237,29 @@ head(visibility_data)
 
 ```
 
+To visualize our data, we will create a plot showing the the average visibility by comparing deep and shallow habitats. We will also incorporate a line between the points. Deep is colored salmon and shallow is colored aqua. 
+
 ```{r visibility graph}
 visibility_data %>%
   ggplot(aes(x=habitat_type, y = average_vis, color = depth_strat, group = depth_strat)) +
   geom_point() +
   geom_line() + 
-  labs(title = "Average Visibility at different stratum", x = "Habitat Type", y = "Average Length") +
+  labs(title = "Average Visibility at different stratum", x = "Habitat Type", y = "Average Visibility") +
   theme(axis.text.x = element_text(angle = 90))
-
 
 ```
 
-Lets take a **deeper** look using the sample_depth which provides a more precise indicator of depth
+Based on the graph we can gather that the visibility is clearer in deeper waters. While the visibility, average distance you can see, decreases in shallow waters. The only habitat type that different visibility levels based on depth is Bedrock. 
 
 
-Sometimes when we grab data we dont have it in the format we want. Take for example this graph, where the sample_depth and underwater_visibility are numeric attributes, but are not defined as such in the table. So to remedy this we just perform a simple mutate.
+
+Let's take a **deeper** look using the sample_depth which provides a more precise indicator of depth
+
+
+Sometimes when we grab data we don't have it in the format we want. Take for example this graph, where the sample_depth and underwater_visibility are numeric attributes, but are not defined as such in the table. So, to remedy this we just perform a simple mutate.
 ```{r vis_depth analysis}
 vis_depth_data <- clean_fish_data %>%
-  mutate( underwater_visibility = as.numeric(underwater_visibility), sample_depth =  as.numeric(sample_depth))
+  mutate(underwater_visibility = as.numeric(underwater_visibility), sample_depth =  as.numeric(sample_depth))
 
 ```
 
@@ -221,11 +268,14 @@ vis_depth_data %>%
   ggplot(aes(x=sample_depth, y=underwater_visibility)) +
   geom_point() +
   geom_smooth(method = lm) +
-  theme(axis.text.x = element_text(angle = 90))
+  labs(title = "Average Visibility based on depth for each habitat", x = "Depth", y = "Average Visibility")
 ```
 
+Based on the graph constructed above we can see the average visibility with the line through the data points. We can conclude that as depth increases the average level of visibility increases as well. 
 
-Now lets start thinking about tempature and its impact on the fish. Using common sense reasoning we can see that 
+
+
+Now, let's start thinking about temperature and its impact on the fish. Using common sense reasoning we can see that as we move from June to August temperatures should increase. 
 ```{r fish by month}
   fish_month_data <- clean_fish_data %>%
   mutate(month = month(ymd_hms(time))) %>%
@@ -234,12 +284,16 @@ Now lets start thinking about tempature and its impact on the fish. Using common
   
 head(fish_month_data)
 ```
+
+In this chart we can see that from June to August the number of fish decrease and the fish diversity decrease as well. Besides in July when the fish diversity increase by 5, but decreased by 20 going from July to August. 
+
 ###Temp
 
 There is a lot to be said about temperature, one of the more fundamental things to think about when discussing ocean temperatures is the effects of climate change. As you saw above our temperature data comes in the form of numerous data frames, 2 per location around St. John's island in the US virgin Islands. 
  
  
-This plot will give us the first data for Haulover
+This plot will give us the first graph for Haulover
+
 ```{r temp_Year_HA_1}
 clean_temp_HA_1 %>% 
   mutate(year = year(mdy_hm(Date_Time))) %>%
@@ -251,7 +305,13 @@ clean_temp_HA_1 %>%
   labs( title = "Temperature over years", y = "average temperature")
 
 ```
-This plot will give us the second data for Haulover
+
+In the graph above we can see that on average the water temperature decreases in Haulover over time.
+
+
+
+This plot will give us the second graph for Haulover
+
 ```{r temp_Year_HA_2}
 clean_temp_HA_2 %>% 
   mutate(year = year(mdy_hm(Date_Time))) %>%
@@ -264,8 +324,13 @@ clean_temp_HA_2 %>%
 
 ```
 
+In the graph above we can see that on average the water temperature decreases in Haulover over time.
 
-This plot will give us the first data for Newfound
+
+
+
+This plot will give us the first graph for Newfound
+
 ```{r temp_Year_NF_1}
 clean_temp_NF_1 %>% 
   mutate(year = year(mdy_hm(Date_Time))) %>%
@@ -278,8 +343,12 @@ clean_temp_NF_1 %>%
 
 ```
 
+In the graph above we can see that on average the water temperature increases in Newfound over time.
 
-This plot will give us the second data for Newfound
+
+
+This plot will give us the second graph for Newfound
+
 ```{r temp_Year_NF_2}
 clean_temp_NF_2 %>% 
   mutate(year = year(mdy_hm(Date_Time))) %>%
@@ -292,7 +361,12 @@ clean_temp_NF_2 %>%
 
 ```
 
-This plot will give us the first data for Yawzi
+In the graph above we can see that on average the water temperature decreases in Newfound over time.
+
+
+
+This plot will give us the first graph for Yawzi
+
 ```{r temp_Year_YZ_1}
 clean_temp_YZ_1 %>% 
   mutate(year = year(mdy_hm(Date_Time))) %>%
@@ -304,7 +378,12 @@ clean_temp_YZ_1 %>%
   labs( title = "Temperature over years", y = "average temperature")
 
 ```
-This plot will give us the second data for Yawzi
+
+In the graph above we can see that on average the water temperature increases in Yawzi over time.
+
+
+
+This plot will give us the second graph for Yawzi
 ```{r temp_Year_YZ_2}
 clean_temp_YZ_2 %>% 
   mutate(year = year(mdy_hm(Date_Time))) %>%
@@ -317,7 +396,11 @@ clean_temp_YZ_2 %>%
 
 ```
 
-This plot will give us the first data for Windspirit
+In the graph above we can see that on average the water temperature decreases in Yawzi over time.
+
+
+
+This plot will give us the first graph for Windspirit
 ```{r temp_Year_WS_1}
 clean_temp_WS_1 %>% 
   mutate(year = year(mdy_hm(Date_Time))) %>%
@@ -329,7 +412,13 @@ clean_temp_WS_1 %>%
   labs( title = "Temperature over years", y = "average temperature")
 
 ```
-This plot will give us the second data for Windspirit
+
+In the graph above we can see that on average the water temperature increases in Windspirit over time.
+
+
+
+This plot will give us the second graph for Windspirit
+
 ```{r temp_Year_WS_2}
 clean_temp_WS_2 %>% 
   mutate(year = year(mdy_hm(Date_Time))) %>%
@@ -341,7 +430,10 @@ clean_temp_WS_2 %>%
   labs( title = "Temperature over years", y = "average temperature")
 
 ```
-This plot will give us the first data for Tekkite
+In the graph above we can see that on average the water temperature stays constant in Windspirit over time.
+
+
+This plot will give us the first graph for Tekkite
 ```{r temp_Year_TK_1}
 clean_temp_TK_1 %>% 
   mutate(year = year(mdy_hm(Date_Time))) %>%
@@ -353,7 +445,13 @@ clean_temp_TK_1 %>%
   labs( title = "Temperature over years", y = "average temperature")
 
 ```
-This plot will give us the second data for Tekkite
+
+In the graph above we can see that on average the water temperature decreases in Tekkite over time.
+
+
+
+This plot will give us the second graph for Tekkite
+
 ```{r temp_Year_TK_2}
 clean_temp_TK_2 %>% 
   mutate(year = year(mdy_hm(Date_Time))) %>%
@@ -366,7 +464,12 @@ clean_temp_TK_2 %>%
 
 ```
 
-This plot will give us the first data for Mennebeck
+In the graph above we can see that on average the water temperature decreases in Tekkite over time.
+
+
+
+This plot will give us the first graph for Mennebeck
+
 ```{r temp_Year_MB_1}
 clean_temp_MB_1 %>% 
   mutate(year = year(mdy_hm(Date_Time))) %>%
@@ -379,7 +482,12 @@ clean_temp_MB_1 %>%
 
 ```
 
-This plot will give us the second data for Mennebeck
+In the graph above we can see that on average the water temperature stays constant in Mennebeck over time.
+
+
+
+This plot will give us the second graph for Mennebeck
+
 ```{r temp_Year_MB_2}
 clean_temp_MB_2 %>% 
   mutate(year = year(mdy_hm(Date_Time))) %>%
@@ -392,16 +500,19 @@ clean_temp_MB_2 %>%
 
 ```
 
+In the graph above we can see that on average the water temperature decreases in Mennebeck over time.
 
-So now we have looked at all of the different temperature datasets, and they didn't give us the results we exactly expected. It seems like a good time to move into our next section.
+
+
+So now we have looked at all of the different temperature data sets, and they didn't give us the results we exactly expected. We expected all of the data to show us that the water temperature has steadily increased over the years, but the results were varied even between the same location between data set 1 and 2. 
 
 ##Machine Learning
 
 #Hypothesis
-Our hypothesis is that fish in the US virgin Islands generally fare better in cooler water because the coral reefs are We will test this out by using linear regression to analyse the relationship between temperature, number of fish seen, and fish diversity observed.
+Our hypothesis is that fish in the U.S. Virgin Islands generally fare better in cooler water because the coral reefs are able to thrive. [Studies](https://link.springer.com/chapter/10.1007/978-94-007-0114-4_23) have shown that water temperatures exceeding a certain temperature result in coral bleaching, also known as the coral dying. We will test this theory by using linear regression to analyse the relationship between temperature, number of fish seen, and fish diversity observed. Unfortunately, our fish data table only contains data for three months in 2017; so it may not be enough data to show real evidence and a correlation.
 
 #temperature
-Right now our temperature data is in a sorry state to be comared with our other data. It is heavily fragmented, which does a good job at showing the different situations at the different locations around St. John's Island, but isn't great for data that doesn't correlate exactly with the locations talked about. So we are going to merger the 12 datasets to create a single large dataset which might give us an idea of the overall situation of the ocean in the region.
+Both of our data tables have issues, the temperature data is spread out between 12 different data tables and the fish data only covers three months in 2017. The temperature data being heavily fragmented has pros and cons. A pro being it does a good job at showing the different situations at the different locations around St. John's Island. A con being the data doesn't correlate exactly with the locations talked about. So we are going to merger the 12 data sets to create a single large dataset which might give us an idea of the overall situation of the ocean in the region.
 
 ```{r temperature-concatenation}
 cleaned_temps <- rbind(clean_temp_HA_1,clean_temp_HA_2,clean_temp_MB_1, clean_temp_MB_2, clean_temp_NF_1, clean_temp_NF_2, clean_temp_TK_1, clean_temp_TK_2, clean_temp_WS_1, clean_temp_WS_2, clean_temp_YZ_1, clean_temp_YZ_2)
@@ -410,10 +521,10 @@ head(cleaned_temps)
 
 ```
 
-Now we are gonna want to use this temperature data in conjunction with our fish data. In particular we are gonna want to use our newly created temperature dataset to see what the average temperature was for a day, and see how the number of fish recorded and diversity of fish recorded corespond that day to temperature.
+Now we are gonna want to use this temperature data in conjunction with our fish data. In particular we are going to want to use our newly created temperature dataset to see what the average temperature was for a day. Then see how the number of fish recorded and diversity of fish recorded correspond to the temperature for that particular day.
 
 
-We start by getting both tables to be ordered around dates. Once both the temperature and fish tables have one entity per date, we can join them by said date. We wanted to correlate the information in the two tables, so we had to find an attribute where we could make them match, we used date as our primary key. An inner join seemed natural for this problem, an inner join only perserves the entities where the two tables overlap. 
+We start by getting both tables to be centered around dates. Once both the temperature and fish tables have one entity per date, we can join them by said date. We wanted to correlate the information in the two tables, so we had to find an attribute where we could make them match, we used date as our primary key. An inner join seemed natural for this problem, since an inner join only preserves the entities where the two tables overlap. 
 ```{r join-by-days}
 cleaned_temps_day <- cleaned_temps %>%
   mutate(date = date(mdy_hm(Date_Time))) %>%
@@ -430,15 +541,37 @@ compiled_data <- inner_join(cleaned_temps_day, clean_fish_days)
 head(compiled_data)
 ```
 
-Now that we have all of the information in one table, we can actual perform the regression using the lm() function to see how the attributes correlate with each other and analyze our hypothesis.
+Now that we have all of the information in one table, we can perform the regression using the lm() function to see how the attributes correlate with each other and analyze our hypothesis.
 ```{r regression-by days}
 
 day_sum_fit <- lm(average_temperature~sum_fish_sighted, data = compiled_data)
 
-day_sum_fit
+day_sum_fit_stats <- day_sum_fit %>%
+  broom::tidy()
+ 
 
+day_sum_fit_stats
+```
+```{r regression-by days2}
 day_diversity_fit <- lm(average_temperature~fish_diversity, data = compiled_data)
 
-day_diversity_fit
+day_diversity_fit_stats <- day_diversity_fit %>%
+  broom::tidy() 
+
+
+
+day_diversity_fit_stats
 ```
 
+We would reject the null hypothesis for the fish diversity, but not for number of fish sighted. We know this because the p-value for fish diversity is lower than 0.05, while the p-value for sum of fish sighted is greater than 0.05. This indicates a correlation between overall water temperature and fish diversity, but not in number of fish seen.
+
+##Conclusion
+
+Understanding how the water temperature can effect different coral reef ecosystems could help us in conserving these diverse ecosystems. As temperatures rise across the globe so will water temperatures. This data can help scientists, activists, and people who want to make a change. This information can also help bring awareness to future generations by gaining interest in young children to think of creative solutions and start making the changes that are needed to save the reefs. 
+
+In conclusion, there are a lot of things we can say about the coral reefs around the U.S. Virgin Islands. For starters we can say that certain areas have experienced the changing climate in different ways. Overall our period of study wasn't long enough to do a truly comprehensive analysis of the effects of changing climate on the ecosystem surrounding the coral reefs. But there were plenty of interesting findings that we observed through our exploratory data analysis and machine learning analysis of the data.
+
+We can conclude that the Aggregate reef is a favorable reef ecosystem since it is most highly populated(or so it appears from our data) and most diverse. Another interesting finding was that different areas around St. John did not all show the same change in water temperatures over time; some increased, decreased, and even remained constant. This was surprising since the temperature data was taken over a long period of time from around early 1990's to 2018.
+
+There is more to explore in this field and with data that covers a larger span of time. We could find out if different types of coral reefs are able to withstand warmer water temperatures. Thus creating a possible solution to coral bleaching. 
+ 
