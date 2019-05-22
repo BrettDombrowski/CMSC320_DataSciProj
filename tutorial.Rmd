@@ -1,6 +1,6 @@
 ---
-title: "Tutorial"
-author: "Brett Bernhardt Dombrowski"
+title: "U.S. Virgin Islands Coral Reef Data"
+author: "Brett Bernhardt Dombrowski & Kirsten Meredith Ostrom"
 date: "May 20, 2019"
 output: html_document
 ---
@@ -8,15 +8,16 @@ output: html_document
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 library(tidyverse)
+library(lubridate)
 ```
 
-### Data Science Tutorial
+# Data Science Tutorial
 
 ##Introduction 
 
 Are different types of coral reefs home to more species of fish than other types of coral reefs? How does water temperature impact the coral reef and the ecosystem that thrives off this living structure? Using two different data sets, Coral Reef Water Temperature Monitoring Protocol Data and National Coral Reef Monitoring Program: Assessment of coral reef fish communities in the U.S. Virgin Islands data, we can answer these questions and discover more findings. This tutorial will walk you through the entire data science pipeline. The first step is to identify the problem or question you want to explore, which we have described above for our tutorial. Next you want to find resources that have data tables with enough entities and key attributes to create informative findings on the subject, which we have also listed above. Then we will show you how to collect and clean the data to make it readable for the machine and user with data curation, parsing, and management tools. Once that data is manageable we will show you how to complete an exploratory data analysis by creating new data tables and graphs to create hypothesis about the data. Then we will show you how to test the hypothesis and use machine learning to provide an analysis for your findings. Finally, we will show you how to curate a message or messages covering insights learned during the tutorial.
 
-#Required Set-up
+###Required Set-up
 
 You will need [R](https://cran.r-project.org/index.html) and the following packages to follow along with the tutorial:
     1. tidyverse
@@ -31,7 +32,7 @@ We also recommend downloading and using [RStudio](https://www.rstudio.com/produc
 
 Finally, you will need both of the data sets talked about above. Coral Reef Water Temperature Monitoring Protocol Data can be obtained at https://www.nps.gov/im/sfcn/coral-reef-water-temp.htm. National Coral Reef Monitoring Program: Assessment of coral reef fish communities in the U.S. Virgin Islands data can be obtained at https://catalog.data.gov/dataset/national-coral-reef-monitoring-program-assessment-of-coral-reef-fish-communities-in-the-u-s-vir.
 
-#Collect Data
+###Collect Data
 
 There are multiple methods of retrieving data from a website based on how the data is published. We will be walking through two different methods of data collection. 
 
@@ -42,6 +43,34 @@ data_temp1 <- read_csv("VIIS_HA_1_20181025.csv")
 
 The second data set we will be downloading into Rstudio we will scrape from HTML. [National Coral Reef Monitoring Program: Assessment of coral reef fish communities in the U.S. Virgin Islands data](https://ecowatch.ncddc.noaa.gov/erddap/tabledap/CRCP_Reef_Fish_Surveys_USVI.htmlTable?time%2Clatitude%2Clongitude%2Cprimary_sample_unit%2Cstation_nr%2Csample_depth%2Cunderwater_visibility%2Cgrid_id%2Chabitat_cd%2Chabitat_type%2Cdepth_strat%2Cdepth_strat_description%2Csub_region%2Csub_region_name_description%2Cadmin%2Cadministration_description%2Cspecies_nr%2Cspecies_cd%2Cscientific_name%2Ccommon_name%2Clen%2Cnum%2Ctime_seen%2Cprot%2Cstrat%2Cstrat_description%2Cregion%2Cregion_description%2Caccession_url&time%3C=2019-05-20T18%3A20%3A56Z) will bring you to the HTML data set. To scrape this data we will use a CSS selector to get the table. In the inspect element on the website we were able to see that we can select by class to get the data set. Below is the code to scrape the data (I will also include the libraries that are needed to complete the code, including the libraries only needs to be coded once in a document before it is used):
 
+```{r get_html_table}
+library(tidyverse)
+library(rvest)
+library(dplyr)
+library(lubridate)
+url <- "https://ecowatch.ncddc.noaa.gov/erddap/tabledap/CRCP_Reef_Fish_Surveys_USVI.htmlTable?time%2Clatitude%2Clongitude%2Cprimary_sample_unit%2Cstation_nr%2Csample_depth%2Cunderwater_visibility%2Cgrid_id%2Chabitat_cd%2Chabitat_type%2Cdepth_strat%2Cdepth_strat_description%2Csub_region%2Csub_region_name_description%2Cadmin%2Cadministration_description%2Cspecies_nr%2Cspecies_cd%2Cscientific_name%2Ccommon_name%2Clen%2Cnum%2Ctime_seen%2Cprot%2Cstrat%2Cstrat_description%2Cregion%2Cregion_description%2Caccession_url&time%3C=2019-05-20T18%3A20%3A56Z"
+html_data <- url %>%
+  read_html() %>%
+  html_nodes("table.erd.commonBGColor")%>%
+  html_table()
+
+head(html_data)
+```
+
+Due to the size of the file, scraping the data from the html was not able to capture all of the entities. Therefore, moving forward from this point we will use the csv file so we can analyze all of the entities to gather more informative conclusions. The code below demonstrates how to get the data set from the csv URL.
+
+```{r get_csv_table}
+library(tidyverse)
+library(rvest)
+library(dplyr)
+
+csv_url <- "https://ecowatch.ncddc.noaa.gov/erddap/tabledap/CRCP_Reef_Fish_Surveys_USVI.csv?time%2Clatitude%2Clongitude%2Cprimary_sample_unit%2Cstation_nr%2Csample_depth%2Cunderwater_visibility%2Cgrid_id%2Chabitat_cd%2Chabitat_type%2Cdepth_strat%2Cdepth_strat_description%2Csub_region%2Csub_region_name_description%2Cadmin%2Cadministration_description%2Cspecies_nr%2Cspecies_cd%2Cscientific_name%2Ccommon_name%2Clen%2Cnum%2Ctime_seen%2Cprot%2Cstrat%2Cstrat_description%2Cregion%2Cregion_description%2Caccession_url&time%3C=2019-05-21T22%3A10%3A44Z"
+
+CRCP_Reef_Fish_Surveys <- read_csv(csv_url)
+
+head(CRCP_Reef_Fish_Surveys)
+```
+
 
 #Clean the Data
 
@@ -51,57 +80,51 @@ Once we have gotten the data from our two sources, we need to make sure that its
 As you know from above, the source of our temperature data has many csv files all in the same format, so we will perform the same operations on all of them. We wThe temperature data came to us in a more roundabout way, but the only real thing that we need to do is make sure that none of the entities have blank attributes or "NA". This can be accomplished with dplyr's filter() function that puts a constraint on the entities we want to consider, in this case it only includes entities where none of the fields are NA or blank.
 ```{r temp-prep}
   clean_temp_NF_1 <- VIIS_NF_1_20181025 %>%
-  filter(Date_Time != "NA", Temp_C != "NA", Quality != "NA", Interpolation!= "NA", Approval != "NA")
-
-
+    filter(Date_Time != "NA", Temp_C != "NA", Quality != "NA", Interpolation!= "NA", Approval != "NA")
   clean_temp_NF_2 <- VIIS_NF_2_20181025 %>%
-  filter(Date_Time != "NA", Temp_C != "NA", Quality != "NA", Interpolation!= "NA", Approval != "NA")
-  
+    filter(Date_Time != "NA", Temp_C != "NA", Quality != "NA", Interpolation!= "NA", Approval != "NA")
   clean_temp_MB_1 <- VIIS_MB_1_20181025 %>%
-  filter(Date_Time != "NA", Temp_C != "NA", Quality != "NA", Interpolation!= "NA", Approval != "NA")
-
-
+    filter(Date_Time != "NA", Temp_C != "NA", Quality != "NA", Interpolation!= "NA", Approval != "NA")
   clean_temp_MB_2 <- VIIS_MB_2_20181025 %>%
-  filter(Date_Time != "NA", Temp_C != "NA", Quality != "NA", Interpolation!= "NA", Approval != "NA")
-
+    filter(Date_Time != "NA", Temp_C != "NA", Quality != "NA", Interpolation!= "NA", Approval != "NA")
   clean_temp_TK_1 <- VIIS_TK_1_20181025 %>%
-  filter(Date_Time != "NA", Temp_C != "NA", Quality != "NA", Interpolation!= "NA", Approval != "NA")
-
-
+    filter(Date_Time != "NA", Temp_C != "NA", Quality != "NA", Interpolation!= "NA", Approval != "NA")
   clean_temp_TK_2 <- VIIS_TK_2_20181025 %>%
-  filter(Date_Time != "NA", Temp_C != "NA", Quality != "NA", Interpolation!= "NA", Approval != "NA")
-
-  
+    filter(Date_Time != "NA", Temp_C != "NA", Quality != "NA", Interpolation!= "NA", Approval != "NA")
   clean_temp_HA_1 <- VIIS_HA_1_20181025 %>%
-  filter(Date_Time != "NA", Temp_C != "NA", Quality != "NA", Interpolation!= "NA", Approval != "NA")
-
-
+    filter(Date_Time != "NA", Temp_C != "NA", Quality != "NA", Interpolation!= "NA", Approval != "NA")
   clean_temp_HA_2 <- VIIS_HA_2_20181025 %>%
-  filter(Date_Time != "NA", Temp_C != "NA", Quality != "NA", Interpolation!= "NA", Approval != "NA")
-
+    filter(Date_Time != "NA", Temp_C != "NA", Quality != "NA", Interpolation!= "NA", Approval != "NA")
   clean_temp_WS_1 <- VIIS_WS_1_20181025 %>%
-  filter(Date_Time != "NA", Temp_C != "NA", Quality != "NA", Interpolation!= "NA", Approval != "NA")
-
-
+    filter(Date_Time != "NA", Temp_C != "NA", Quality != "NA", Interpolation!= "NA", Approval != "NA")
   clean_temp_WS_2 <- VIIS_WS_2_20181025 %>%
-  filter(Date_Time != "NA", Temp_C != "NA", Quality != "NA", Interpolation!= "NA", Approval != "NA")
-
+    filter(Date_Time != "NA", Temp_C != "NA", Quality != "NA", Interpolation!= "NA", Approval != "NA")
   clean_temp_YZ_1 <- VIIS_YZ_1_20181025 %>%
-  filter(Date_Time != "NA", Temp_C != "NA", Quality != "NA", Interpolation!= "NA", Approval != "NA")
-
-
+    filter(Date_Time != "NA", Temp_C != "NA", Quality != "NA", Interpolation!= "NA", Approval != "NA")
   clean_temp_YZ_2 <- VIIS_YZ_2_20181025 %>%
-  filter(Date_Time != "NA", Temp_C != "NA", Quality != "NA", Interpolation!= "NA", Approval != "NA")
-
+    filter(Date_Time != "NA", Temp_C != "NA", Quality != "NA", Interpolation!= "NA", Approval != "NA")
+  head(clean_temp_HA_1)
+  head(clean_temp_HA_2)
+  head(clean_temp_NF_1)
+  head(clean_temp_NF_2)
+  head(clean_temp_TK_1)
+  head(clean_temp_TK_2)
+  head(clean_temp_MB_1)
+  head(clean_temp_MB_2)
+  head(clean_temp_WS_1)
+  head(clean_temp_WS_2)
+  head(clean_temp_YZ_1)
+  head(clean_temp_YZ_2)
 ```
 
 
 With our fish data there is a glaring problem almost immediately, there is an entity for non-sightings of fish. The csv has an entity for each time/place-species combination, most of these entities do not consist of fish-sightings. So what we need to do is remove all entities where the num is 0, because in these instances there are no fish to consider. We can accomplish this with a another simple "filter()" statement below, its just that this time we are constraining our set to be   
 
 ```{r fish-prep}
-clean_fish_data <- CRCP_Reef_Fish_Surveys_USVI_4490_3467_8907 %>%
+clean_fish_data <- CRCP_Reef_Fish_Surveys %>%
   filter(num > 0)
 
+head(clean_fish_data)
 ```
 
 
@@ -117,19 +140,305 @@ This following block of code will
   *use select to cut out the attributes we have no interest in
   *use summarize to change the structure of our table to have each entity be a strat_description
     *we also use this summarize to construct our new table with all sorts of information about the different strat(i.e. amount of fish if laid front to back, and num_sightings)
-```{r fish analysis}
+    
+#Fish
+
+```{r fish habitat analysis}
 
 
-mod_data <- clean_fish_data %>%
-  group_by(strat_description) %>%
+hab_data <- clean_fish_data %>%
+  group_by(habitat_type) %>%
   mutate(fish_diversity = n_distinct(species_nr)) %>%
-  select(latitude, longitude, strat_description, fish_diversity, habitat_type, num, len, sub_region_name_description) %>%
+  select(latitude, longitude, habitat_type, fish_diversity, habitat_type, num, len, sub_region_name_description) %>%
   summarize( num_sightings = n(), fish_diversity = mean(fish_diversity), fish_volume = sum(as.numeric(num) * as.numeric(len)))
   
-mod_data
+head(hab_data)
 ```
 
-```{r }
+
+This is how we visualize our data
+```{r habitat diversity}
+hab_data %>%
+  ggplot(aes(x = num_sightings, y = fish_diversity, color = habitat_type)) +
+  geom_point() +
+  labs(title = "Differences in Diversity for habitats", x ="number of sightings", y = "fish diversity")
+
+```
+
+```{r strat analysis}
+strat_data <- clean_fish_data %>%
+  group_by(habitat_type, depth_strat) %>%
+  select(depth_strat, habitat_type, habitat_type, num, len, sub_region_name_description) %>%
+  summarize( average_length = mean(as.numeric(len)))
+  
+head(strat_data)
+```
+
+```{r strat graph}
+strat_data %>%
+  ggplot(aes(x=habitat_type, y = average_length, color = depth_strat, group = depth_strat)) +
+  geom_point() +
+  geom_line() + 
+  labs(title = "Average length of fish at different stratum", x = "Habitat Type", y = "Average Length") +
+  theme(axis.text.x = element_text(angle = 90))
 
 
 ```
+
+```{r visibility analysis}
+visibility_data <- clean_fish_data %>%
+  group_by(habitat_type, depth_strat) %>%
+  select(depth_strat, habitat_type, underwater_visibility, habitat_type, num, len, sub_region_name_description) %>%
+  summarize( average_vis = mean(as.numeric(underwater_visibility)))
+  
+head(visibility_data)
+
+```
+
+```{r visibility graph}
+visibility_data %>%
+  ggplot(aes(x=habitat_type, y = average_vis, color = depth_strat, group = depth_strat)) +
+  geom_point() +
+  geom_line() + 
+  labs(title = "Average Visibility at different stratum", x = "Habitat Type", y = "Average Length") +
+  theme(axis.text.x = element_text(angle = 90))
+
+
+```
+
+Lets take a **deeper** look using the sample_depth which provides a more precise indicator of depth
+
+
+Sometimes when we grab data we dont have it in the format we want. Take for example this graph, where the sample_depth and underwater_visibility are numeric attributes, but are not defined as such in the table. So to remedy this we just perform a simple mutate.
+```{r vis_depth analysis}
+vis_depth_data <- clean_fish_data %>%
+  mutate( underwater_visibility = as.numeric(underwater_visibility), sample_depth =  as.numeric(sample_depth))
+
+```
+
+```{r vis_depth plot}
+vis_depth_data %>%
+  ggplot(aes(x=sample_depth, y=underwater_visibility)) +
+  geom_point() +
+  geom_smooth(method = lm) +
+  theme(axis.text.x = element_text(angle = 90))
+```
+
+
+Now lets start thinking about tempature and its impact on the fish. Using common sense reasoning we can see that 
+```{r fish by month}
+  fish_month_data <- clean_fish_data %>%
+  mutate(month = month(ymd_hms(time))) %>%
+  group_by(month) %>%
+  summarize(sum_fish = sum(num), fish_diversity = n_distinct(species_nr))
+  
+head(fish_month_data)
+```
+###Temp
+
+There is a lot to be said about temperature, one of the more fundamental things to think about when discussing ocean temperatures is the effects of climate change. As you saw above our temperature data comes in the form of numerous data frames, 2 per location around St. John's island in the US virgin Islands. 
+ 
+ 
+This plot will give us the first data for Haulover
+```{r temp_Year_HA_1}
+clean_temp_HA_1 %>% 
+  mutate(year = year(mdy_hm(Date_Time))) %>%
+  group_by(year) %>%
+  summarize(avg_temp = mean(Temp_C)) %>%
+  ggplot(aes( x = year, y = avg_temp)) +
+  geom_point() +
+  geom_smooth(method = lm) +
+  labs( title = "Temperature over years", y = "average temperature")
+
+```
+This plot will give us the second data for Haulover
+```{r temp_Year_HA_2}
+clean_temp_HA_2 %>% 
+  mutate(year = year(mdy_hm(Date_Time))) %>%
+  group_by(year) %>%
+  summarize(avg_temp = mean(Temp_C)) %>%
+  ggplot(aes( x = year, y = avg_temp)) +
+  geom_point() +
+  geom_smooth(method = lm) +
+  labs( title = "Temperature over years", y = "average temperature")
+
+```
+
+
+This plot will give us the first data for Newfound
+```{r temp_Year_NF_1}
+clean_temp_NF_1 %>% 
+  mutate(year = year(mdy_hm(Date_Time))) %>%
+  group_by(year) %>%
+  summarize(avg_temp = mean(Temp_C)) %>%
+  ggplot(aes( x = year, y = avg_temp)) +
+  geom_point() +
+  geom_smooth(method = lm) +
+  labs( title = "Temperature over years", y = "average temperature")
+
+```
+
+
+This plot will give us the second data for Newfound
+```{r temp_Year_NF_2}
+clean_temp_NF_2 %>% 
+  mutate(year = year(mdy_hm(Date_Time))) %>%
+  group_by(year) %>%
+  summarize(avg_temp = mean(Temp_C)) %>%
+  ggplot(aes( x = year, y = avg_temp)) +
+  geom_point() +
+  geom_smooth(method = lm) +
+  labs( title = "Temperature over years", y = "average temperature")
+
+```
+
+This plot will give us the first data for Yawzi
+```{r temp_Year_YZ_1}
+clean_temp_YZ_1 %>% 
+  mutate(year = year(mdy_hm(Date_Time))) %>%
+  group_by(year) %>%
+  summarize(avg_temp = mean(Temp_C)) %>%
+  ggplot(aes( x = year, y = avg_temp)) +
+  geom_point() +
+  geom_smooth(method = lm) +
+  labs( title = "Temperature over years", y = "average temperature")
+
+```
+This plot will give us the second data for Yawzi
+```{r temp_Year_YZ_2}
+clean_temp_YZ_2 %>% 
+  mutate(year = year(mdy_hm(Date_Time))) %>%
+  group_by(year) %>%
+  summarize(avg_temp = mean(Temp_C)) %>%
+  ggplot(aes( x = year, y = avg_temp)) +
+  geom_point() +
+  geom_smooth(method = lm) +
+  labs( title = "Temperature over years", y = "average temperature")
+
+```
+
+This plot will give us the first data for Windspirit
+```{r temp_Year_WS_1}
+clean_temp_WS_1 %>% 
+  mutate(year = year(mdy_hm(Date_Time))) %>%
+  group_by(year) %>%
+  summarize(avg_temp = mean(Temp_C)) %>%
+  ggplot(aes( x = year, y = avg_temp)) +
+  geom_point() +
+  geom_smooth(method = lm) +
+  labs( title = "Temperature over years", y = "average temperature")
+
+```
+This plot will give us the second data for Windspirit
+```{r temp_Year_WS_2}
+clean_temp_WS_2 %>% 
+  mutate(year = year(mdy_hm(Date_Time))) %>%
+  group_by(year) %>%
+  summarize(avg_temp = mean(Temp_C)) %>%
+  ggplot(aes( x = year, y = avg_temp)) +
+  geom_point() +
+  geom_smooth(method = lm) +
+  labs( title = "Temperature over years", y = "average temperature")
+
+```
+This plot will give us the first data for Tekkite
+```{r temp_Year_TK_1}
+clean_temp_TK_1 %>% 
+  mutate(year = year(mdy_hm(Date_Time))) %>%
+  group_by(year) %>%
+  summarize(avg_temp = mean(Temp_C)) %>%
+  ggplot(aes( x = year, y = avg_temp)) +
+  geom_point() +
+  geom_smooth(method = lm) +
+  labs( title = "Temperature over years", y = "average temperature")
+
+```
+This plot will give us the second data for Tekkite
+```{r temp_Year_TK_2}
+clean_temp_TK_2 %>% 
+  mutate(year = year(mdy_hm(Date_Time))) %>%
+  group_by(year) %>%
+  summarize(avg_temp = mean(Temp_C)) %>%
+  ggplot(aes( x = year, y = avg_temp)) +
+  geom_point() +
+  geom_smooth(method = lm) +
+  labs( title = "Temperature over years", y = "average temperature")
+
+```
+
+This plot will give us the first data for Mennebeck
+```{r temp_Year_MB_1}
+clean_temp_MB_1 %>% 
+  mutate(year = year(mdy_hm(Date_Time))) %>%
+  group_by(year) %>%
+  summarize(avg_temp = mean(Temp_C)) %>%
+  ggplot(aes( x = year, y = avg_temp)) +
+  geom_point() +
+  geom_smooth(method = lm) +
+  labs( title = "Temperature over years", y = "average temperature")
+
+```
+
+This plot will give us the second data for Mennebeck
+```{r temp_Year_MB_2}
+clean_temp_MB_2 %>% 
+  mutate(year = year(mdy_hm(Date_Time))) %>%
+  group_by(year) %>%
+  summarize(avg_temp = mean(Temp_C)) %>%
+  ggplot(aes( x = year, y = avg_temp)) +
+  geom_point() +
+  geom_smooth(method = lm) +
+  labs( title = "Temperature over years", y = "average temperature")
+
+```
+
+
+So now we have looked at all of the different temperature datasets, and they didn't give us the results we exactly expected. It seems like a good time to move into our next section.
+
+##Machine Learning
+
+#Hypothesis
+Our hypothesis is that fish in the US virgin Islands generally fare better in cooler water because the coral reefs are We will test this out by using linear regression to analyse the relationship between temperature, number of fish seen, and fish diversity observed.
+
+#temperature
+Right now our temperature data is in a sorry state to be comared with our other data. It is heavily fragmented, which does a good job at showing the different situations at the different locations around St. John's Island, but isn't great for data that doesn't correlate exactly with the locations talked about. So we are going to merger the 12 datasets to create a single large dataset which might give us an idea of the overall situation of the ocean in the region.
+
+```{r temperature-concatenation}
+cleaned_temps <- rbind(clean_temp_HA_1,clean_temp_HA_2,clean_temp_MB_1, clean_temp_MB_2, clean_temp_NF_1, clean_temp_NF_2, clean_temp_TK_1, clean_temp_TK_2, clean_temp_WS_1, clean_temp_WS_2, clean_temp_YZ_1, clean_temp_YZ_2)
+
+head(cleaned_temps)
+
+```
+
+Now we are gonna want to use this temperature data in conjunction with our fish data. In particular we are gonna want to use our newly created temperature dataset to see what the average temperature was for a day, and see how the number of fish recorded and diversity of fish recorded corespond that day to temperature.
+
+
+We start by getting both tables to be ordered around dates. Once both the temperature and fish tables have one entity per date, we can join them by said date. We wanted to correlate the information in the two tables, so we had to find an attribute where we could make them match, we used date as our primary key. An inner join seemed natural for this problem, an inner join only perserves the entities where the two tables overlap. 
+```{r join-by-days}
+cleaned_temps_day <- cleaned_temps %>%
+  mutate(date = date(mdy_hm(Date_Time))) %>%
+  group_by(date) %>%
+  summarize(average_temperature = mean(Temp_C))
+
+clean_fish_days <- clean_fish_data %>%
+  mutate(date = date(ymd_hms(time))) %>%
+  group_by(date) %>%
+  summarize(sum_fish_sighted = sum(num), fish_diversity = n_distinct(species_nr))
+
+compiled_data <- inner_join(cleaned_temps_day, clean_fish_days)
+
+head(compiled_data)
+```
+
+Now that we have all of the information in one table, we can actual perform the regression using the lm() function to see how the attributes correlate with each other and analyze our hypothesis.
+```{r regression-by days}
+
+day_sum_fit <- lm(average_temperature~sum_fish_sighted, data = compiled_data)
+
+day_sum_fit
+
+day_diversity_fit <- lm(average_temperature~fish_diversity, data = compiled_data)
+
+day_diversity_fit
+```
+
